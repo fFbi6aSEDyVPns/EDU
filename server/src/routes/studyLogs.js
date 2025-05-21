@@ -1,23 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
-const auth = require('../middlewares/auth');
+const { protect, authorize } = require('../middlewares/auth');
 const studyLogController = require('../controllers/studyLogController');
 
 // @route   GET /api/study-logs/user
 // @desc    Get all study logs for current user
 // @access  Private
-router.get('/user', auth, studyLogController.getUserStudyLogs);
+router.get('/user', protect, studyLogController.getUserStudyLogs);
 
 // @route   GET /api/study-logs/summary
 // @desc    Get study logs summary for current user
 // @access  Private
-router.get('/summary', auth, studyLogController.getUserStudyLogsSummary);
+router.get('/summary', protect, studyLogController.getUserStudyLogsSummary);
 
 // @route   GET /api/study-logs/class/:classId/statistics
 // @desc    Get class study statistics (for teachers)
 // @access  Private (teachers only)
-router.get('/class/:classId/statistics', auth, studyLogController.getClassStudyStatistics);
+router.get('/class/:classId/statistics', protect, authorize('teacher'), studyLogController.getClassStudyStatistics);
 
 // @route   POST /api/study-logs
 // @desc    Create a new study log
@@ -25,7 +25,7 @@ router.get('/class/:classId/statistics', auth, studyLogController.getClassStudyS
 router.post(
   '/',
   [
-    auth,
+    protect,
     [
       check('classId', 'Class ID is required').not().isEmpty(),
       check('subject', 'Subject is required').not().isEmpty(),
@@ -41,7 +41,7 @@ router.post(
 router.put(
   '/:id',
   [
-    auth,
+    protect,
     [
       check('subject', 'Subject must be valid').optional(),
       check('duration', 'Duration must be a positive number').optional().isInt({ min: 1 }),
@@ -54,6 +54,6 @@ router.put(
 // @route   DELETE /api/study-logs/:id
 // @desc    Delete a study log
 // @access  Private
-router.delete('/:id', auth, studyLogController.deleteStudyLog);
+router.delete('/:id', protect, studyLogController.deleteStudyLog);
 
 module.exports = router;

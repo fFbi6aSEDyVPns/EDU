@@ -1,18 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
-const auth = require('../middlewares/auth');
+const { protect, authorize } = require('../middlewares/auth');
 const assignmentController = require('../controllers/assignmentController');
 
 // @route   GET /api/assignments/class/:classId
 // @desc    Get all assignments for a class
 // @access  Private
-router.get('/class/:classId', auth, assignmentController.getClassAssignments);
+router.get('/class/:classId', protect, assignmentController.getClassAssignments);
 
 // @route   GET /api/assignments/user
 // @desc    Get all assignments for current user
 // @access  Private
-router.get('/user', auth, assignmentController.getUserAssignments);
+router.get('/user', protect, assignmentController.getUserAssignments);
 
 // @route   POST /api/assignments
 // @desc    Create a new assignment
@@ -20,7 +20,8 @@ router.get('/user', auth, assignmentController.getUserAssignments);
 router.post(
   '/',
   [
-    auth,
+    protect,
+    authorize('teacher'),
     [
       check('title', 'Title is required').not().isEmpty(),
       check('dueDate', 'Due date is required').not().isEmpty(),
@@ -36,7 +37,7 @@ router.post(
 router.put(
   '/:id',
   [
-    auth,
+    protect,
     [
       check('title', 'Title is required when updating').optional(),
       check('dueDate', 'Due date must be valid').optional().isISO8601(),
@@ -52,7 +53,8 @@ router.put(
 router.put(
   '/status/:id',
   [
-    auth,
+    protect,
+    authorize('student'),
     [
       check('status', 'Status is required').not().isEmpty().isIn(['pending', 'completed'])
     ]
@@ -63,6 +65,6 @@ router.put(
 // @route   DELETE /api/assignments/:id
 // @desc    Delete an assignment
 // @access  Private (teacher or creator only)
-router.delete('/:id', auth, assignmentController.deleteAssignment);
+router.delete('/:id', protect, assignmentController.deleteAssignment);
 
 module.exports = router;

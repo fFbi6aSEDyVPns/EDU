@@ -1,50 +1,56 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-
 // 保護路由，確保用戶已登入
-module.exports.protect = async (req, res, next) => {
-  let token;
-
-  // 從 Authorization 標頭獲取 token
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    token = req.headers.authorization.split(' ')[1];
-  }
-
-  // 檢查 token 是否存在
-  if (!token) {
-    return res.status(401).json({ message: '未授權：Token 缺失' });
-  }
-
+const protect = async (req, res, next) => {
   try {
-    // 驗證 token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // 從 header 獲取 token
+    const token = req.header('Authorization')?.replace('Bearer ', '');
 
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      return res.status(401).json({ message: '未授權：找不到用戶' });
+    // 檢查是否有 token
+    if (!token) {
+      console.log('No token provided');
+      return res.status(401).json({ message: '沒有權限，請先登入' });
     }
 
-    // 僅傳需要的欄位給 req.user
-    req.user = { id: user._id, role: user.role };
+    // 驗證 token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Token decoded:', decoded);
+    
+    // 查找用戶
+    const user = await User.findById(decoded.id).select('-password');
+    
+    if (!user) {
+      console.log('User not found in database');
+      return res.status(401).json({ message: '無效的用戶' });
+    }
 
+    // 將用戶信息添加到請求對象
+    req.user = user;
     next();
-  } catch (error) {
-    return res.status(401).json({ message: '未授權：Token 無效' });
+  } catch (err) {
+    console.error('Error in auth middleware:', err);
+    res.status(401).json({ 
+      message: '無效的 token',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };
 
 // 授權角色
-module.exports.authorize = (...roles) => {
+const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
+      console.log('Unauthorized role:', req.user.role);
       return res.status(403).json({
         message: `${req.user.role} 無權限訪問此資源`,
       });
     }
     next();
   };
+};
+
+module.exports = {
+  protect,
+  authorize
 };
