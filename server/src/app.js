@@ -18,7 +18,7 @@ const app = express();
 // CORS 配置
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.onrender.com', 'http://localhost:3000']
+    ? ['https://education-platform-2.onrender.com', 'http://localhost:3000']
     : 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
